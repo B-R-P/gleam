@@ -37,6 +37,7 @@ jobs:
           - aarch64-unknown-linux-musl
           - x86_64-apple-darwin
           - x86_64-pc-windows-msvc
+          - i686-pc-windows-gnu
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -67,6 +68,10 @@ jobs:
             target: x86_64-pc-windows-msvc
             use-cross: false
             run-integration-tests: true
+          - os: windows-latest
+            target: i686-pc-windows-gnu
+            use-cross: false
+            run-integration-tests: true
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -84,6 +89,12 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           target: ${{ matrix.target }}
+
+      - name: Install MinGW (Windows, i686-pc-windows-gnu)
+        run: |
+          choco install mingw
+          echo "C:\tools\mingw64\bin" >> $GITHUB_PATH
+        if: ${{ runner.os == 'Windows' && matrix.target == 'i686-pc-windows-gnu' }}
 
       - name: Install Erlang (non-macos)
         uses: erlef/setup-beam@v1
