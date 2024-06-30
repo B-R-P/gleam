@@ -91,9 +91,9 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Set up MinGW
-        uses: egor-tensin/setup-mingw@v2
-        with:
-          platform: x64
+        run: |
+          choco install mingw
+          echo "C:\ProgramData\mingw64\mingw32\bin" >> $GITHUB_PATH
         if: ${{ runner.os == 'Windows' && matrix.target == 'i686-pc-windows-gnu' }}
 
       - name: Install Erlang (non-macos)
