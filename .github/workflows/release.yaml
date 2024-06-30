@@ -14,13 +14,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest, macos-11, windows-latest]
         target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
           - x86_64-apple-darwin
           - aarch64-apple-darwin
           - x86_64-pc-windows-msvc
-        toolchain: [stable]
+          - i686-pc-windows-gnu
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
@@ -37,20 +38,29 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             use-cross: false
+          - os: windows-latest
+            target: i686-pc-windows-gnu
+            use-cross: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ matrix.toolchain }}
+          profile: minimal
+          toolchain: stable
           target: ${{ matrix.target }}
+
+      - name: Install MinGW for i686-pc-windows-gnu
+        if: matrix.target == 'i686-pc-windows-gnu'
+        run: |
+          choco install mingw
 
       - name: Handle Rust dependencies caching
         uses: Swatinem/rust-cache@v2
         with:
-          key: v1-${{ matrix.target }}
+          key: v1-${{ matrix.os }}-${{ matrix.target }}
 
       - name: Build release binary
         uses: clechasseur/rs-cargo@v2
@@ -84,11 +94,11 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.target }}" in
-            x86_64-pc-windows-msvc)
+            x86_64-pc-windows-msvc|i686-pc-windows-gnu)
               7z x "$ASSET"
               ./gleam.exe --version ;;
             aarch64*)
-              echo "We cannot test an ARM binary on a AMD64 runner" ;;
+              echo "We cannot test an ARM binary on an AMD64 runner" ;;
             *)
               tar -xvzf "$ASSET"
               ./gleam --version ;;
@@ -115,9 +125,9 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
-          profile: minimal
           override: true
 
       - name: Install wasm-pack
